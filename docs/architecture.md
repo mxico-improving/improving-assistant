@@ -30,6 +30,10 @@
 - `notify.py` sends native notifications (notify-send, osascript, PowerShell toast).
 - `scheduler.py` renders the OS job definitions. `cli.py install-scheduler` copies the app to
   `~/.improving-assistant/app/` (a stable path that survives plugin updates) and registers the job.
+- `cdp.py` and `browser.py` are a stdlib-only DevTools client for the browser fallback
+  (`ia.py browser`). It drives a visible Chrome with a dedicated profile when Claude in Chrome
+  isn't available. See docs/browser.md.
+- `cli.py setup` and `doctor` handle the config file and health checks used by /improving-setup.
 - `skills/` holds the conversational parts: judgment, confirmation and browser work.
 
 ## Why this split

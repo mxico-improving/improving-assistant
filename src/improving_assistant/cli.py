@@ -6,6 +6,10 @@ Subcommands:
   remind-check  Exit 0 and print a reminder if the week is still pending, else exit 1.
   notify        Same check, but shows a desktop notification (what the scheduler runs).
   install-scheduler  Install the weekly reminder in the OS scheduler.
+  setup         Write the user config (project, hours, PTO type, holiday calendar).
+  doctor        Check config, holidays, reminder and fallback browser.
+  browser       Drive your own visible Chrome (fallback when Claude in Chrome isn't available):
+                start | tabs | eval TAB JS | click TAB TEXT | type TAB TEXT | shot TAB FILE
 """
 
 from __future__ import annotations
@@ -57,7 +61,133 @@ def _parser() -> argparse.ArgumentParser:
     ins.add_argument("--os", choices=["linux", "macos", "windows"], default=None)
     ins.add_argument("--dest", help="directory to write files to (default: the OS location)")
     ins.add_argument("--no-activate", action="store_true", help="write files only, don't enable")
+
+    st = sub.add_parser("setup", help="write your config file")
+    st.add_argument("--config", help="config path (default: ~/.improving-assistant/config.toml)")
+    st.add_argument("--project", required=True, help="your Workday project row, exactly as shown")
+    st.add_argument("--hours-per-day", type=float, default=8)
+    st.add_argument("--pto-type", default="Guatemala PTO")
+    st.add_argument("--country", default="us", help="holiday calendar code (data/holidays/<code>-*.toml)")
+    st.add_argument("--force", action="store_true", help="overwrite an existing config")
+
+    doc = sub.add_parser("doctor", help="check that everything is set up")
+    doc.add_argument("--config")
+    doc.add_argument("--port", type=int, default=9333)
+
+    br = sub.add_parser("browser", help="drive your visible Chrome over DevTools (fallback)")
+    br.add_argument("--port", type=int, default=9333)
+    bsub = br.add_subparsers(dest="bcmd", required=True)
+    bsub.add_parser("start", help="launch Chrome with the dedicated profile, Engage + Workday tabs")
+    bsub.add_parser("tabs", help="list open tabs as JSON")
+    for name, arg, h in (("eval", "js", "evaluate JavaScript, print the JSON value"),
+                         ("click", "text", "real mouse click on the element with this exact text"),
+                         ("type", "text", "type text as real key events into the focused element"),
+                         ("shot", "file", "save a PNG screenshot")):
+        c = bsub.add_parser(name, help=h)
+        c.add_argument("tab", help="substring of the tab URL or title, e.g. 'engage' or 'myworkday'")
+        c.add_argument(arg)
+        if name == "click":
+            c.add_argument("--index", type=int, default=0, help="pick the Nth match (default 0)")
     return p
+
+
+def _toml_str(s: str) -> str:
+    return json.dumps(s, ensure_ascii=False)  # JSON string escaping is valid TOML basic-string syntax
+
+
+def _calendars() -> list[str]:
+    return sorted({p.name.split("-", 1)[0] for p in HOLIDAYS_DIR.glob("*-*.toml")})
+
+
+def _setup(args) -> int:
+    from improving_assistant.config import default_config_path
+
+    path = Path(args.config) if args.config else default_config_path()
+    if args.country not in _calendars():
+        print(f"Unknown holiday calendar {args.country!r}. Available: {', '.join(_calendars())}")
+        return 1
+    if path.exists() and not args.force:
+        print(f"{path} already exists. Re-run with --force to overwrite it.")
+        return 1
+    hours = int(args.hours_per_day) if float(args.hours_per_day).is_integer() else args.hours_per_day
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "# improving-assistant config (see config.example.toml)\n"
+        f"project = {_toml_str(args.project)}\n"
+        f"hours_per_day = {hours}\n"
+        f"pto_type = {_toml_str(args.pto_type)}\n"
+        f"country = {_toml_str(args.country)}\n", encoding="utf-8")
+    print(f"wrote {path}")
+    return 0
+
+
+def _reminder_status() -> str:
+    os_name = current_os()
+    if os_name == "linux":
+        f = Path.home() / ".config" / "systemd" / "user" / "improving-assistant.timer"
+    elif os_name == "macos":
+        f = Path.home() / "Library" / "LaunchAgents" / "com.improving.assistant.plist"
+    else:
+        f = home_dir() / "scheduler" / "improving-assistant.xml"
+    return "installed" if f.exists() else "not installed (run: ia.py install-scheduler)"
+
+
+def _doctor(args) -> int:
+    from improving_assistant.cdp import list_targets
+
+    ok = True
+    try:
+        cfg = load_config(args.config)
+        print(f"config: ok (project: {cfg.project}, {cfg.hours_per_day}h/day, calendar: {cfg.country})")
+        years = sorted({d.year for d in load_holidays(HOLIDAYS_DIR, cfg.country)})
+        if date.today().year in years:
+            print(f"holidays: ok ({cfg.country}: {', '.join(map(str, years))})")
+        else:
+            print(f"holidays: WARNING, no {cfg.country} calendar for {date.today().year} (see docs/holidays.md)")
+    except ConfigError as e:
+        print(f"config: MISSING ({e})")
+        ok = False
+    print(f"reminder: {_reminder_status()}")
+    try:
+        n = len(list_targets(args.port))
+        print(f"fallback browser: running on port {args.port} ({n} tabs)")
+    except OSError:
+        print("fallback browser: not running (only needed without Claude in Chrome: ia.py browser start)")
+    return 0 if ok else 1
+
+
+def _browser(args) -> int:
+    from improving_assistant import browser
+
+    if args.bcmd == "start":
+        exe = browser.find_chrome(current_os())
+        if not exe:
+            print("Google Chrome or Microsoft Edge not found. Install one and retry.")
+            return 2
+        browser.start(exe, home_dir() / "chrome-profile", args.port)
+        print(f"Started Chrome (profile {home_dir() / 'chrome-profile'}). Sign in to Engage and Workday there.")
+        return 0
+    try:
+        if args.bcmd == "tabs":
+            tabs = browser.list_targets(args.port)
+            print(json.dumps([{"title": t.get("title"), "url": t.get("url")} for t in tabs], indent=2))
+        elif args.bcmd == "eval":
+            print(json.dumps(browser.evaluate(args.port, args.tab, args.js), ensure_ascii=False))
+        elif args.bcmd == "click":
+            if not browser.click_text(args.port, args.tab, args.text, args.index):
+                print(f"No visible element with text {args.text!r}")
+                return 1
+        elif args.bcmd == "type":
+            browser.type_text(args.port, args.tab, args.text)
+        elif args.bcmd == "shot":
+            print(browser.screenshot(args.port, args.tab, Path(args.file)))
+    except (OSError, ConnectionError) as e:
+        print(f"Can't reach Chrome on port {args.port} ({e}). Run: ia.py browser start")
+        return 2
+    except LookupError as e:
+        print(e)
+        return 1
+    return 0
 
 
 def _reminder_message(args, today: date) -> str:
@@ -156,6 +286,13 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "install-scheduler":
         return _install_scheduler(args)
+
+    if args.cmd == "browser":
+        return _browser(args)
+    if args.cmd == "setup":
+        return _setup(args)
+    if args.cmd == "doctor":
+        return _doctor(args)
     return 2
 
 

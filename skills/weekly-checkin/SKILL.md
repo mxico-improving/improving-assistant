@@ -13,6 +13,15 @@ The CLI is `${CLAUDE_PLUGIN_ROOT}/ia.py`. It needs only the Python standard libr
 Run it with `python3` (use `py` on Windows). In Hermes, or when working from a clone,
 use `ia.py` at the repo root.
 
+## Browser (pick one before step 4; see `${CLAUDE_PLUGIN_ROOT}/docs/browser.md`)
+- **Claude in Chrome** (preferred): if browser tools are available (`/chrome` shows Enabled),
+  use them. They drive the user's own Chrome, where they're already signed in.
+- **Fallback** (API-key auth, Hermes, WSL, no extension): use the plugin's own client.
+  `python3 "${CLAUDE_PLUGIN_ROOT}/ia.py" browser tabs` (if it can't connect: `... browser start`
+  and ask the user to sign in), then `browser eval|click|type|shot <tab> ...`.
+Either way: if a tab shows a login page (`/account/login`, `login.microsoftonline.com`,
+`authgwy/.../login`), stop and ask the user to sign in and approve MFA, then continue.
+
 ## Steps
 
 1. Build the draft plan (holidays come from the shipped calendar automatically):
@@ -29,7 +38,7 @@ use `ia.py` at the repo root.
    If they report a day off that is neither PTO nor a listed holiday, ask which Workday
    time-off type applies before continuing. Never invent one.
 
-4. Open the Workday timesheet for the week (MENU > Time > This Week; see docs/workday.md)
+4. Open the Workday timesheet for the week (MENU > Time > This Week; see `${CLAUDE_PLUGIN_ROOT}/docs/workday.md`)
    and compare what Workday already shows with the plan. Workday usually pre-fills 8h Mon-Fri,
    shows holidays as 0 with the holiday name in the column header, and PTO as a "Guatemala PTO"
    row. List any differences. Only for the PTO days the user gave you in steps 2-3, YOU add the
@@ -52,8 +61,8 @@ use `ia.py` at the repo root.
      "40 Billable Hour Week" in this week (to avoid duplicates), then fill the form with exactly
      those values and click "Add 5 points". Check that the new row appears.
    If Microsoft sign-in asks for MFA, tell the user to approve it on their phone and wait.
-   Never type passwords or MFA codes yourself. Engage needs a normal visible Chrome window
-   (Cloudflare blocks headless browsers).
+   Never type passwords or MFA codes yourself. Use real clicks and keystrokes. Workday ignores
+   synthetic JS clicks and `.value` changes.
 
 7. Only after Workday is submitted AND Engage is added (or correctly skipped), run
    `python3 "${CLAUDE_PLUGIN_ROOT}/ia.py" mark-done` so the reminder stops.
@@ -62,5 +71,5 @@ use `ia.py` at the repo root.
 
 ## Rules
 - Never save or submit anything without the explicit OK from step 5.
-- If a screen doesn't match docs/workday.md or docs/engage.md, stop, describe what you see,
+- If a screen doesn't match `${CLAUDE_PLUGIN_ROOT}/docs/workday.md` or `.../docs/engage.md`, stop, describe what you see,
   and suggest updating the doc. Don't guess on forms that submit data.

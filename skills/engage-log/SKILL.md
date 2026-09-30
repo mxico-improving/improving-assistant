@@ -11,12 +11,21 @@ Records one activity in https://engage.improving.com ("Add Activity" form).
 Form fields: Activity Category, Activity Type (options depend on the category),
 Date (MM/DD/YYYY), Quantity (default 1), Notes. The button reads "Add N points".
 
+## Browser (pick one before submitting; see `${CLAUDE_PLUGIN_ROOT}/docs/browser.md`)
+- **Claude in Chrome** (preferred): if browser tools are available (`/chrome` shows Enabled),
+  use them. They drive the user's own Chrome, where they're already signed in.
+- **Fallback** (API-key auth, Hermes, WSL, no extension): use the plugin's own client.
+  `python3 "${CLAUDE_PLUGIN_ROOT}/ia.py" browser tabs` (if it can't connect: `... browser start`
+  and ask the user to sign in), then `browser eval|click|type|shot <tab> ...`.
+Either way: if a tab shows a login page (`/account/login`, `login.microsoftonline.com`,
+`authgwy/.../login`), stop and ask the user to sign in and approve MFA, then continue.
+
 ## Steps
 
 1. Parse the request ($ARGUMENTS): what happened, the date (resolve "yesterday"/"Friday"
    to a real date and state it), quantity, and anything useful for Notes.
 
-2. Pick the Category and Type from the list in `docs/engage.md`. If that list is missing
+2. Pick the Category and Type from the list in `${CLAUDE_PLUGIN_ROOT}/docs/engage.md`. If that list is missing
    or nothing fits clearly, open the form and read the live dropdown options. Offer the
    2-3 closest matches and let the user choose. Never pick an ambiguous type silently.
 

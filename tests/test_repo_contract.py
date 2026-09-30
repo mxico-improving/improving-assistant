@@ -44,7 +44,7 @@ def test_plugin_and_pyproject_versions_match():
 
 
 def test_expected_skills_exist():
-    assert {p.name for p in SKILLS} >= {"weekly-checkin", "engage-log"}
+    assert {p.name for p in SKILLS} >= {"weekly-checkin", "engage-log", "improving-setup"}
 
 
 @pytest.mark.parametrize("skill", SKILLS, ids=lambda p: p.name)
@@ -57,7 +57,7 @@ def test_skill_has_name_matching_folder_and_description(skill):
 @pytest.mark.parametrize("doc", [
     "README.md", "CLAUDE.md", "CONTRIBUTING.md", "CHANGELOG.md", "LICENSE",
     "docs/architecture.md", "docs/development.md", "docs/adding-a-skill.md",
-    "docs/workday.md", "docs/engage.md", "docs/scheduler.md", "docs/holidays.md",
+    "docs/workday.md", "docs/engage.md", "docs/scheduler.md", "docs/holidays.md", "docs/browser.md",
     "docs/decisions/0001-claude-code-plugin-with-os-scheduler.md",
     "docs/decisions/0002-red-green-tdd.md",
 ])

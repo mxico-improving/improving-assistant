@@ -1,0 +1,38 @@
+# Improving US holiday calendar, 2026 (the calendar Improving Guatemala follows).
+# One file per calendar and year: <calendar>-<year>.toml. See docs/holidays.md to add a year.
+
+[[holiday]]
+date = 2026-01-01
+name = "New Year's Day"
+
+[[holiday]]
+date = 2026-02-20
+name = "Improving Summit 2026"
+
+[[holiday]]
+date = 2026-05-25
+name = "Memorial Day"
+
+[[holiday]]
+date = 2026-07-03
+name = "Independence Day (Observed)"
+
+[[holiday]]
+date = 2026-09-07
+name = "Labor Day"
+
+[[holiday]]
+date = 2026-11-26
+name = "Thanksgiving Day"
+
+[[holiday]]
+date = 2026-11-27
+name = "Improving Holiday (Thanksgiving)"
+
+[[holiday]]
+date = 2026-12-24
+name = "Improving Holiday (Christmas Eve)"
+
+[[holiday]]
+date = 2026-12-25
+name = "Christmas Day"

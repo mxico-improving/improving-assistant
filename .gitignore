@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+dist/
+config.toml
+state.json
+# local-only list of sensitive terms for scripts/check_secrets.py, never commit
+.denylist

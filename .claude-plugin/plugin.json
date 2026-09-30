@@ -1,0 +1,9 @@
+{
+  "name": "improving-assistant",
+  "version": "0.1.0",
+  "description": "Automates Improving admin chores: weekly Workday timesheet, the weekly 'full week' Engage entry, and ad-hoc Engage activity logging.",
+  "author": { "name": "Mynor Xico", "email": "mynor.xico@improving.com" },
+  "repository": "https://github.com/mxico-improving/improving-assistant",
+  "license": "MIT",
+  "keywords": ["improving", "workday", "timesheet", "engage"]
+}

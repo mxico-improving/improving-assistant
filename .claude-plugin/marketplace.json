@@ -1,0 +1,15 @@
+{
+  "name": "improving-assistant",
+  "description": "Improving admin automations: Workday timesheets and Engage activities.",
+  "owner": {
+    "name": "Mynor Xico",
+    "email": "mynor.xico@improving.com"
+  },
+  "plugins": [
+    {
+      "name": "improving-assistant",
+      "source": "./",
+      "description": "Workday timesheets and Engage activity logging for Improving employees."
+    }
+  ]
+}
